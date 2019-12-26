@@ -37,13 +37,18 @@ public class LoginView extends javax.swing.JFrame {
     public static INI password;
     private Usuario userLogado;
 
+    private final String CHAVE_PRINCIPAL = "db-config";
+    private final String CHAVE_LOCAL_BASE = "local";
+    private final String CHAVE_USUARIO = "user";
+    private final String CHAVE_SENHA = "password";
+
     /**
      * Creates new form LoginView
      */
     public LoginView() {
-        db = new INI("db-config", "local");
-        user = new INI("db-config", "user");
-        password = new INI("db-config", "password");
+        db = new INI(CHAVE_PRINCIPAL, CHAVE_LOCAL_BASE);
+        user = new INI(CHAVE_PRINCIPAL, CHAVE_USUARIO);
+        password = new INI(CHAVE_PRINCIPAL, CHAVE_SENHA);
         userLogado = null;
         initComponents();
         // verificaLogin();
@@ -60,8 +65,8 @@ public class LoginView extends javax.swing.JFrame {
 
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        usuarioForm = new javax.swing.JTextField();
-        senhaForm = new javax.swing.JPasswordField();
+        usuarioField = new javax.swing.JTextField();
+        senhaField = new javax.swing.JPasswordField();
         loginBtn = new javax.swing.JButton();
         imgLogin = new javax.swing.JLabel();
 
@@ -75,6 +80,18 @@ public class LoginView extends javax.swing.JFrame {
 
         jLabel2.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jLabel2.setText("Senha:");
+
+        usuarioField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                usuarioFieldKeyPressed(evt);
+            }
+        });
+
+        senhaField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                senhaFieldKeyPressed(evt);
+            }
+        });
 
         loginBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imgs/btn.png"))); // NOI18N
         loginBtn.setText("Login");
@@ -101,11 +118,11 @@ public class LoginView extends javax.swing.JFrame {
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel1)
                                 .addGap(18, 18, 18)
-                                .addComponent(usuarioForm, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(usuarioField, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel2)
                                 .addGap(26, 26, 26)
-                                .addComponent(senhaForm, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                .addComponent(senhaField, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
                 .addComponent(imgLogin)
                 .addContainerGap())
@@ -120,13 +137,13 @@ public class LoginView extends javax.swing.JFrame {
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(3, 3, 3)
                                 .addComponent(jLabel1))
-                            .addComponent(usuarioForm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(usuarioField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(6, 6, 6)
                                 .addComponent(jLabel2))
-                            .addComponent(senhaForm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(senhaField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addComponent(loginBtn))
                     .addGroup(layout.createSequentialGroup()
@@ -142,9 +159,27 @@ public class LoginView extends javax.swing.JFrame {
         try {
             verificaLogin();
         } catch (ClassNotFoundException | SQLException | IOException | NoSuchAlgorithmException ex) {
+            JOptionPane.showMessageDialog(null, "Não foi possível carregar!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
             Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_loginBtnActionPerformed
+
+    private void usuarioFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_usuarioFieldKeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            senhaField.requestFocus();
+        }
+    }//GEN-LAST:event_usuarioFieldKeyPressed
+
+    private void senhaFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_senhaFieldKeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            try {
+                verificaLogin();
+            } catch (ClassNotFoundException | SQLException | IOException | NoSuchAlgorithmException ex) {
+                JOptionPane.showMessageDialog(null, "Não foi possível carregar!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
+                Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_senhaFieldKeyPressed
 
     /**
      * @param args the command line arguments
@@ -187,8 +222,8 @@ public class LoginView extends javax.swing.JFrame {
         connection = fabrica.getConnection(db.getDir(), user.getDir(), password.getDir());
 
         PreparedStatement stmt = connection.prepareStatement("SELECT * FROM usuarios WHERE usuarios.usuario = ?");
-        System.out.println("" + usuarioForm.getText());
-        stmt.setString(1, usuarioForm.getText());
+        System.out.println("" + usuarioField.getText());
+        stmt.setString(1, usuarioField.getText());
         ResultSet resultSet = stmt.executeQuery();
         Usuario u = new Usuario();
         while (resultSet.next()) {
@@ -205,7 +240,7 @@ public class LoginView extends javax.swing.JFrame {
             u.setUsuario(resultSet.getString("usuario"));
         }
         //verifica se a senha do usuário carregado anteriormente é igual a do senhaForm
-        String senha = new String(senhaForm.getPassword()).trim();
+        String senha = new String(senhaField.getPassword()).trim();
         if (MD5(senha).equals(u.getSenha())) {
             if (u.isBloqueado()) {
                 JOptionPane.showMessageDialog(null, "Usuário encontra-se bloqueado!\n", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -214,7 +249,7 @@ public class LoginView extends javax.swing.JFrame {
                         + "SET tentativas = 0 \n"
                         + "WHERE  usuarios.usuario = ?";
                 PreparedStatement pstmt = connection.prepareStatement(sql);
-                pstmt.setString(1, usuarioForm.getText());
+                pstmt.setString(1, usuarioField.getText());
                 pstmt.executeUpdate();
                 resultSet.close();
                 pstmt.close();
@@ -240,9 +275,9 @@ public class LoginView extends javax.swing.JFrame {
             } else if (u.isAtivo()) {
                 PreparedStatement stmt2 = connection.prepareStatement("UPDATE usuarios SET "
                         + "tentativas = 1+(SELECT tentativas FROM usuarios WHERE usuarios.usuario = ?) WHERE usuarios.usuario = ?");
-                System.out.println("" + usuarioForm.getText());
-                stmt2.setString(1, usuarioForm.getText());
-                stmt2.setString(2, usuarioForm.getText());
+                System.out.println("" + usuarioField.getText());
+                stmt2.setString(1, usuarioField.getText());
+                stmt2.setString(2, usuarioField.getText());
                 stmt2.executeUpdate();
                 stmt2.close();
                 connection.close();
@@ -281,7 +316,7 @@ public class LoginView extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JButton loginBtn;
-    private javax.swing.JPasswordField senhaForm;
-    private javax.swing.JTextField usuarioForm;
+    private javax.swing.JPasswordField senhaField;
+    private javax.swing.JTextField usuarioField;
     // End of variables declaration//GEN-END:variables
 }
