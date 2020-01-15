@@ -259,6 +259,7 @@ public class LoginView extends javax.swing.JFrame {
                 System.out.println("logado!");
 
                 final MainView main = new MainView(this.userLogado);
+                main.setLocationRelativeTo(null);
                 main.setVisible(true);
                 this.dispose();
 
