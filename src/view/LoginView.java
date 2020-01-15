@@ -263,9 +263,11 @@ public class LoginView extends javax.swing.JFrame {
                 main.setVisible(true);
                 this.dispose();
 
-            } else {
+            } else if (!u.isAtivo()) {
                 JOptionPane.showMessageDialog(null, "Usuário encontra-se inativo!\n", "Erro", JOptionPane.ERROR_MESSAGE);
 
+            } else {
+                JOptionPane.showMessageDialog(null, "Usuário não encontrado!\n", "Erro", JOptionPane.ERROR_MESSAGE);
             }
 
         } else {
@@ -283,9 +285,11 @@ public class LoginView extends javax.swing.JFrame {
                 stmt2.close();
                 connection.close();
                 JOptionPane.showMessageDialog(null, "Usuário ou senha incorreta!\n", "Erro", JOptionPane.ERROR_MESSAGE);
-            } else {
+            } else if (!u.isAtivo()) {
                 JOptionPane.showMessageDialog(null, "Usuário encontra-se inativo!\n", "Erro", JOptionPane.ERROR_MESSAGE);
 
+            } else {
+                JOptionPane.showMessageDialog(null, "Usuário não encontrado!\n", "Erro", JOptionPane.ERROR_MESSAGE);
             }
 
         }
