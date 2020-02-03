@@ -214,6 +214,7 @@ public class LoginView extends javax.swing.JFrame {
                 final LoginView telaLogin = new LoginView();
                 telaLogin.setLocationRelativeTo(null);
                 telaLogin.setVisible(true);
+                telaLogin.requestFocus();
             }
         });
     }
