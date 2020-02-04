@@ -17,6 +17,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.logging.Level;
@@ -159,8 +160,16 @@ public class LoginView extends javax.swing.JFrame {
         try {
             verificaLogin();
         } catch (ClassNotFoundException | SQLException | IOException | NoSuchAlgorithmException ex) {
-            JOptionPane.showMessageDialog(null, "Não foi possível carregar!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
-            Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
+            try {
+                resetaRole();
+                connection.close();
+                JOptionPane.showMessageDialog(null, "Não foi possível carregar!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
+
+                Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SQLException ex1) {
+                JOptionPane.showMessageDialog(null, "Erro!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
+                Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex1);
+            }
         }
     }//GEN-LAST:event_loginBtnActionPerformed
 
@@ -175,8 +184,16 @@ public class LoginView extends javax.swing.JFrame {
             try {
                 verificaLogin();
             } catch (ClassNotFoundException | SQLException | IOException | NoSuchAlgorithmException ex) {
-                JOptionPane.showMessageDialog(null, "Não foi possível carregar!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
-                Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
+                try {
+                    resetaRole();
+                    connection.close();
+                    JOptionPane.showMessageDialog(null, "Não foi possível carregar!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
+                    Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SQLException ex1) {
+                    resetaRole();
+                    JOptionPane.showMessageDialog(null, "Erro!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
+                    Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex1);
+                }
             }
         }
     }//GEN-LAST:event_senhaFieldKeyPressed
@@ -197,15 +214,11 @@ public class LoginView extends javax.swing.JFrame {
                     break;
                 }
             }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(LoginView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(LoginView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(LoginView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(LoginView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+
         //</editor-fold>
 
         /* Create and display the form */
@@ -215,13 +228,14 @@ public class LoginView extends javax.swing.JFrame {
                 telaLogin.setLocationRelativeTo(null);
                 telaLogin.setVisible(true);
                 telaLogin.requestFocus();
+                usuarioField.requestFocus();
             }
         });
     }
 
     private void verificaLogin() throws ClassNotFoundException, SQLException, IOException, NoSuchAlgorithmException {
         connection = fabrica.getConnection(db.getDir(), user.getDir(), password.getDir());
-
+        //connection = ConnectionFactory.getConnection(db.getDir(), user.getDir(), user.getDir());
         PreparedStatement stmt = connection.prepareStatement("SELECT * FROM usuarios WHERE usuarios.usuario = ?");
         System.out.println("" + usuarioField.getText());
         stmt.setString(1, usuarioField.getText());
@@ -245,6 +259,14 @@ public class LoginView extends javax.swing.JFrame {
             if (u.isBloqueado()) {
                 JOptionPane.showMessageDialog(null, "Usuário encontra-se bloqueado!\n", "Erro", JOptionPane.ERROR_MESSAGE);
             } else if (u.isAtivo()) {
+
+                //CREATE ROLE ozebe LOGIN;
+                //GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ozebe;
+                //seta a role para fins de auditoria
+                Statement statement = connection.createStatement();
+                statement.execute("set role " + "'" + usuarioField.getText() + "'");
+                statement.close();
+
                 String sql = "UPDATE usuarios\n"
                         + "SET tentativas = 0 \n"
                         + "WHERE  usuarios.usuario = ?";
@@ -254,7 +276,7 @@ public class LoginView extends javax.swing.JFrame {
                 resultSet.close();
                 pstmt.close();
                 stmt.close();
-                connection.close();
+                //connection.close();
                 this.userLogado = u;
                 System.out.println("logado!");
 
@@ -264,9 +286,13 @@ public class LoginView extends javax.swing.JFrame {
                 this.dispose();
 
             } else if (!u.isAtivo()) {
+                resetaRole();
+                connection.close();
                 JOptionPane.showMessageDialog(null, "Usuário encontra-se inativo!\n", "Erro", JOptionPane.ERROR_MESSAGE);
 
             } else {
+                resetaRole();
+                connection.close();
                 JOptionPane.showMessageDialog(null, "Usuário não encontrado!\n", "Erro", JOptionPane.ERROR_MESSAGE);
             }
 
@@ -283,12 +309,16 @@ public class LoginView extends javax.swing.JFrame {
                 stmt2.setString(2, usuarioField.getText());
                 stmt2.executeUpdate();
                 stmt2.close();
+                resetaRole();
                 connection.close();
                 JOptionPane.showMessageDialog(null, "Usuário ou senha incorreta!\n", "Erro", JOptionPane.ERROR_MESSAGE);
             } else if (!u.isAtivo()) {
+                resetaRole();
+                connection.close();
                 JOptionPane.showMessageDialog(null, "Usuário encontra-se inativo!\n", "Erro", JOptionPane.ERROR_MESSAGE);
-
             } else {
+                resetaRole();
+                connection.close();
                 JOptionPane.showMessageDialog(null, "Usuário não encontrado!\n", "Erro", JOptionPane.ERROR_MESSAGE);
             }
 
@@ -315,6 +345,17 @@ public class LoginView extends javax.swing.JFrame {
         return userLogado;
     }
 
+    public void resetaRole() {
+        try {
+            Statement statement = connection.createStatement();
+            statement.execute("reset role");
+            statement.close();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Erro!\n" + ex, "Erro", JOptionPane.ERROR_MESSAGE);
+            Logger.getLogger(LoginView.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel imgLogin;
@@ -322,6 +363,6 @@ public class LoginView extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JButton loginBtn;
     private javax.swing.JPasswordField senhaField;
-    private javax.swing.JTextField usuarioField;
+    private static javax.swing.JTextField usuarioField;
     // End of variables declaration//GEN-END:variables
 }
